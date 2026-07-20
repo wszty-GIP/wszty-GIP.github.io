@@ -4,12 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多风工作室 WINSngzs</title>
+    <style>
+        .report-btn{
+            position: fixed;
+            left:12px;
+            top:180px;
+            background:#fff;
+            border-radius:12px;
+            padding:8px 10px;
+            box-shadow: 0 2px 6px #0002;
+            color:#c82423;
+            border:none;
+            cursor:pointer;
+        }
+        .modal{
+            display:none;
+            position:fixed;
+            inset:0;
+            background:#00000055;
+        }
+        .modal-content{
+            width:90%;
+            max-width:500px;
+            margin:15vh auto;
+            background:white;
+            padding:20px;
+            border-radius:10px;
+        }
+        textarea, select{
+            width:100%;
+            margin:8px 0;
+            box-sizing:border-box;
+            padding:6px;
+        }
+        textarea{height:120px;}
+    </style>
 </head>
 <body>
+    <button class="report-btn" onclick="openReport()">⚠️ 举报</button>
+
+    <div class="modal" id="reportModal">
+        <div class="modal-content">
+            <h3>提交举报</h3>
+            <label>举报理由：</label>
+            <select id="reportType">
+                <option value="抄袭">内容抄袭</option>
+                <option value="违规内容">包含违规内容</option>
+                <option value="恶意引流">恶意引流</option>
+                <option value="其他">其他原因</option>
+            </select>
+            <label>详细描述：</label>
+            <textarea id="reportText" placeholder="补充具体情况..."></textarea>
+            <br>
+            <button onclick="submitReport()">提交</button>
+            <button onclick="closeReport()">关闭</button>
+        </div>
+    </div>
+
     <h1>多风工作室 WINSngzs</h1>
     <p>自制系统相关展示页面</p>
     <p><a href="https://uuyc.163.com/" target="_blank">网易UU远程下载</a></p>
     <p><a href="https://www.todesk.com/mobile/#/home" target="_blank">ToDesk下载</a></p>
     <p>镜像提供</p>
+
+<script>
+const modal=document.getElementById('reportModal');
+function openReport(){modal.style.display='block';}
+function closeReport(){modal.style.display='none';}
+function submitReport(){
+    let type=document.getElementById('reportType').value;
+    let content=document.getElementById('reportText').value;
+    if(!content.trim()){alert('请填写详细描述');return;}
+    closeReport();
+    alert('提交完成，已提交给多风工作室');
+}
+</script>
 </body>
 </html>
