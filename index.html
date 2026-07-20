@@ -5,18 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多风工作室 WINSngzs</title>
     <style>
-        .report-btn{
-            position: fixed;
-            left:12px;
-            top:180px;
-            background:#fff;
-            border-radius:12px;
-            padding:8px 10px;
-            box-shadow: 0 2px 6px #0002;
-            color:#c82423;
-            border:none;
-            cursor:pointer;
+        :root{
+            --bg:#ffffff;
+            --text:#000000;
+            --border:#eee;
+            --inputbg:#fff;
+            --btn-bg:#fff;
+            --btn-text:#c82423;
         }
+        .dark{
+            --bg:#121212;
+            --text:#f0f0f0;
+            --border:#333;
+            --inputbg:#222;
+            --btn-bg:#2a2a2a;
+            --btn-text:#ff5555;
+        }
+        body{
+            background:var(--bg);
+            color:var(--text);
+            transition:0.3s ease;
+        }
+        /* 右下角悬浮按钮组：举报在上，深色模式在下 */
+        .float-group{
+            position: fixed;
+            right:15px;
+            bottom:15px;
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            z-index:999;
+        }
+        .float-btn{
+            background:var(--btn-bg);
+            color:var(--text);
+            border:none;
+            border-radius:12px;
+            padding:8px 12px;
+            box-shadow: 0 2px 6px #0002;
+            cursor:pointer;
+            font-size:16px;
+        }
+        .report-btn{
+            color:var(--btn-text);
+        }
+        /* 弹窗通用样式 */
         .modal{
             display:none;
             position:fixed;
@@ -27,22 +60,68 @@
             width:90%;
             max-width:500px;
             margin:15vh auto;
-            background:white;
+            background:var(--bg);
+            color:var(--text);
             padding:20px;
             border-radius:10px;
         }
-        textarea, select{
+        textarea, select, input{
             width:100%;
             margin:8px 0;
             box-sizing:border-box;
             padding:6px;
+            background:var(--inputbg);
+            color:var(--text);
+            border:1px solid var(--border);
         }
         textarea{height:120px;}
+        /* 评论区 */
+        .comment-box{
+            margin-top:40px;
+            max-width:600px;
+        }
+        .comment-item{
+            border:1px solid var(--border);
+            padding:10px;
+            margin:10px 0;
+            border-radius:6px;
+            cursor:pointer;
+        }
+        /* 长按弹出菜单 */
+        .cm-menu{
+            position:fixed;
+            display:none;
+            background:var(--bg);
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:6px 0;
+            box-shadow:0 2px 10px #0003;
+            z-index:9999;
+        }
+        .cm-menu div{
+            padding:8px 16px;
+            cursor:pointer;
+        }
+        .cm-menu div:hover{
+            background:#8882;
+        }
     </style>
 </head>
 <body>
-    <button class="report-btn" onclick="openReport()">⚠️ 举报</button>
+    <!-- 右下角悬浮：举报在上，深色模式在下 -->
+    <div class="float-group">
+        <button class="float-btn report-btn" onclick="openReport()">⚠️ 举报</button>
+        <button class="float-btn" onclick="toggleDark()">🌓 深色模式</button>
+    </div>
 
+    <!-- 评论长按操作菜单 -->
+    <div class="cm-menu" id="cmMenu">
+        <div onclick="copyComment()">复制评论</div>
+        <div onclick="reportComment()">举报该评论</div>
+        <div onclick="delComment()">删除评论</div>
+    </div>
+
+    <!-- 举报弹窗 -->
     <div class="modal" id="reportModal">
         <div class="modal-content">
             <h3>提交举报</h3>
@@ -61,22 +140,113 @@
         </div>
     </div>
 
+    <!-- 网站分享弹窗 -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <h3>网站分享</h3>
+            <p>网站名称：多风工作室 WINSngzs</p>
+            <p>复制本网站链接分享给好友</p>
+            <input id="shareUrl" value="wszty-gip.github.io" readonly>
+            <button onclick="copyUrl()">复制网站链接</button>
+            <button onclick="closeShare()">关闭</button>
+        </div>
+    </div>
+
+    <!-- 网站主页文字 -->
     <h1>多风工作室 WINSngzs</h1>
     <p>自制系统相关展示页面</p>
     <p><a href="https://uuyc.163.com/" target="_blank">网易UU远程下载</a></p>
     <p><a href="https://www.todesk.com/mobile/#/home" target="_blank">ToDesk下载</a></p>
     <p>镜像提供</p>
+    <p><a href="javascript:openShare()">网站分享</a></p>
+
+    <!-- 留言评论区 -->
+    <div class="comment-box">
+        <h3>留言评论区</h3>
+        <input id="nameInput" placeholder="输入你的昵称">
+        <textarea id="commentInput" placeholder="写下你的评论..."></textarea>
+        <button onclick="addComment()">发送评论</button>
+        <div id="commentList"></div>
+    </div>
 
 <script>
-const modal=document.getElementById('reportModal');
-function openReport(){modal.style.display='block';}
-function closeReport(){modal.style.display='none';}
+// 举报弹窗逻辑
+const reportModal=document.getElementById('reportModal');
+function openReport(){reportModal.style.display='block';}
+function closeReport(){reportModal.style.display='none';}
 function submitReport(){
-    let type=document.getElementById('reportType').value;
-    let content=document.getElementById('reportText').value;
-    if(!content.trim()){alert('请填写详细描述');return;}
+    let content=document.getElementById('reportText').value.trim();
+    if(!content){alert('请填写详细描述');return;}
     closeReport();
     alert('提交完成，已提交给多风工作室');
+}
+
+// 深色模式切换
+function toggleDark(){
+    document.body.classList.toggle('dark');
+}
+
+// 网站分享弹窗
+const shareModal=document.getElementById('shareModal');
+function openShare(){shareModal.style.display='block';}
+function closeShare(){shareModal.style.display='none';}
+function copyUrl(){
+    let url=document.getElementById('shareUrl');
+    url.select();
+    document.execCommand("copy");
+    alert('网站链接复制成功，快去分享给朋友！');
+}
+
+// 评论长按1秒、单击回复
+let longPressTimer=null;
+let targetComment=null;
+const cmMenu=document.getElementById('cmMenu');
+document.addEventListener('click',()=>cmMenu.style.display='none');
+
+// 添加新评论
+function addComment(){
+    let name=document.getElementById('nameInput').value.trim();
+    let text=document.getElementById('commentInput').value.trim();
+    if(!name||!text){alert('昵称和评论不能为空');return;}
+    let list=document.getElementById('commentList');
+    let div=document.createElement('div');
+    div.className='comment-item';
+    div.innerHTML=`<strong>${name}</strong><p>${text}</p>`;
+    
+    // 单击=回复
+    div.onclick=function(){
+        document.getElementById('commentInput').placeholder=`回复 ${name}：写下你的评论...`;
+        document.getElementById('commentInput').focus();
+    }
+    // 长按1秒弹出菜单
+    div.onmousedown=div.ontouchstart=function(e){
+        targetComment=this;
+        longPressTimer=setTimeout(()=>{
+            cmMenu.style.left=(e.clientX||e.touches[0].clientX)+'px';
+            cmMenu.style.top=(e.clientY||e.touches[0].clientY)+'px';
+            cmMenu.style.display='block';
+        },1000);
+    }
+    div.onmouseup=div.ontouchend=()=>clearTimeout(longPressTimer);
+    list.appendChild(div);
+    document.getElementById('nameInput').value='';
+    document.getElementById('commentInput').value='';
+}
+
+// 菜单功能：复制、举报、删除
+function copyComment(){
+    let txt=targetComment.querySelector('p').innerText;
+    navigator.clipboard.writeText(txt);
+    alert('已复制该评论');
+    cmMenu.style.display='none';
+}
+function reportComment(){
+    openReport();
+    cmMenu.style.display='none';
+}
+function delComment(){
+    targetComment.remove();
+    cmMenu.style.display='none';
 }
 </script>
 </body>
